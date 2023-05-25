@@ -1,6 +1,6 @@
 STUID = 211220000
 STUNAME = 张三
-
+NEMU_HOME := $(shell echo "/home/liuyang/Downloads/ics2022/nemu")
 # DO NOT modify the following code!!!
 
 GITFLAGS = -q --author='tracer-ics2022 <tracer@njuics.org>' --no-verify --allow-empty
