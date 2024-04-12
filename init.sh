@@ -29,8 +29,8 @@ function init() {
   else
     sed -i -e "/^\/$3/d" .gitignore
     echo "/$3" >> .gitignore
-    git add -A .gitignore
-    git commit --no-verify --allow-empty -am "$1 $2 initialized without tracing"$'\n\n'"$log"
+#    git add -A .gitignore
+#    git commit --no-verify --allow-empty -am "$1 $2 initialized without tracing"$'\n\n'"$log"
   fi
 
   if [ $5 ] ; then

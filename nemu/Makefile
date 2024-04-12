@@ -14,6 +14,7 @@
 #**************************************************************************************/
 
 NEMU_HOME := $(shell echo "/home/liuyang/Downloads/ics2022/nemu")
+AM_HOME := $(shell echo "/home/liuyang/Downloads/ics2022/abstract-machine")
 # Sanity check
 ifeq ($(wildcard $(NEMU_HOME)/src/nemu-main.c),)
   $(error NEMU_HOME=$(NEMU_HOME) is not a NEMU repo)

@@ -14,6 +14,7 @@
 ***************************************************************************************/
 
 #include <isa.h>
+#include <memory/paddr.h>
 #include "local-include/reg.h"
 
 const char *regs[] = {
@@ -24,8 +25,22 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+    uint64_t size = sizeof(cpu.gpr)/sizeof(cpu.gpr[0]);
+    uint64_t i = 0;
+    for( ;i<size;i++){
+        printf("%s: 0x%08lx\n", regs[i], cpu.gpr[i]);
+    }
+    printf("\n");
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
+  uint64_t size = sizeof(regs)/sizeof(regs[0]);
+  uint64_t i = 0;
+  for( ;i<size;i++){
+    if (strcmp(s, regs[i]) != 0)  continue;
+      *success = true;
+      return cpu.gpr[i];
+    }
+  *success = false;
   return 0;
 }

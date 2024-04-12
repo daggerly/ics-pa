@@ -12,9 +12,12 @@
 *
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
-
+#include <stdlib.h>
+#include <errno.h>
 #include <isa.h>
 #include <cpu/cpu.h>
+#include <memory/paddr.h>
+#include <memory/vaddr.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
@@ -23,6 +26,9 @@ static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+bool new_watchpoint(char *expr);
+void free_watchpoint(int nr);
+void print_watchpoint();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -54,6 +60,112 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+
+static int cmd_si(char *args) {
+  char *arg = strtok(NULL, " ");
+  uint64_t n = 1;
+  if (arg != NULL) {
+    n = atoi(arg);
+  }
+  cpu_exec(n);
+  return 0;
+}
+
+
+static int cmd_info(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL){
+    printf("bad arg, in r w\n");
+    return 1;
+  } else if ((*arg) == 'r'){
+    isa_reg_display();
+    return 0;
+  } else if ((*arg) == 'w'){
+    print_watchpoint();
+    return 0;
+  } else{
+    printf("bad arg, in r w\n");
+    return 1;
+  }
+
+}
+
+
+static int cmd_scan(char *args) {
+
+  char * args_all = malloc(strlen(args) + 1);
+  memcpy(args_all, args, strlen(args));
+  *(args_all + strlen(args)) = '\0';
+
+  char *arg = strtok(NULL, " ");
+  uint64_t n = 0;
+  n = atoi(arg);
+  if (n <= 0){
+    free(args_all);
+    Warning("bad N, must be > 0\n");
+    return 0;
+  }
+  char * new_args_all = args_all + strlen(arg) + 1;
+  bool success = true;
+  word_t vaddr = expr(new_args_all, &success);
+  if (!success){
+    Warning("bad expr\n");
+    free(args_all);
+    return 0;
+  }
+  Log("expr %s -> vaddr: 0x%08lx", arg, vaddr);
+  uint64_t i = 0;
+  for (;i<n;i++){
+    word_t v = vaddr+i*4;
+    if (in_pmem(v)){
+      printf("0x%08lx 0x%08lx\n", v, vaddr_read(v, 4));
+    } else{
+      printf("0x%08lx not in pmem\n", v);
+    }
+  }
+  free(args_all);
+
+return 0;
+}
+
+static int cmd_eval_expr(char *args){
+  bool success = true;
+  word_t val = expr(args, &success);
+  if (!success){
+    Warning("bad expr\n");
+    return 0;
+  }
+  printf("%ld\n", val);
+  return 0;
+}
+
+static int cmd_add_monitor(char *args){
+  bool success = new_watchpoint(args);
+  if (!success){
+    Warning("add monitor failed\n");
+    return 0;
+  }
+  return 0;
+}
+
+static int cmd_delete_monitor(char *args){
+  char *arg = strtok(NULL, " ");
+  if (arg == NULL) {
+    Warning("bad N, must be >= 0\n");
+    return 0;
+  }
+  errno = 0;
+  int n = atoi(arg);;
+
+   if (errno != 0) {
+    Warning("bad N, must be >= 0\n");
+    return 0;
+   }
+  printf("%d", n);
+  free_watchpoint(n);
+  return 0;
+}
+
 static struct {
   const char *name;
   const char *description;
@@ -63,8 +175,13 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
 
-  /* TODO: Add more commands */
 
+  { "si", "step instruction", cmd_si },
+  { "info", "print info\n  info r: print registry\n  info w: print monitor point", cmd_info },
+  { "x", "scan memory\n  x N $reg", cmd_scan },
+  { "p", "eval expr \n  p expr", cmd_eval_expr },
+  { "w", "add monitor \n  w expr", cmd_add_monitor },
+  { "d", "delete monitor \n  d N", cmd_delete_monitor },
 };
 
 #define NR_CMD ARRLEN(cmd_table)
