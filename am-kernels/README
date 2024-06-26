@@ -1,0 +1,27 @@
+AbstractMachine kernels
+
+CONTACTS
+
+Bug reports and suggestions go to Yanyan Jiang (jyy@nju.edu.cn) and Zihao 
+Yu (yuzihao@ict.ac.cn).
+
+# 如何生成可执行文件xx？
+执行make后，创建Makefile.xx
+创建Makefile.xx的内容是：
+```
+    NAME = bit
+    SRCS = tests/bit.c
+    LIBS += klib
+    include /home/liuyang/Downloads/ics2022/abstract-machine/Makefile
+```
+而在abstract-machine/Makefile文件中, 生成了xx.elf
+-include $(AM_HOME)/scripts/$(ARCH).mk引入了$(AM_HOME)/scripts/riscv64-nemu.mk
+其又引入了$(AM_HOME)/scripts/platform/nemu.mk，这里使用xx.elf生成了xx.txt和xx.bin
+最终在nemu中执行bin文件
+
+调用方法
+cd tests/cpu-tests
+
+
+make ARCH=riscv64-nemu ALL=goldbach run
+make ARCH=riscv64-nemu ALL=if-else run
