@@ -13,7 +13,7 @@ BUILD_DIR = $(WORK_DIR)/build
 INC_PATH := $(WORK_DIR)/include $(INC_PATH)
 OBJ_DIR  = $(BUILD_DIR)/obj-$(NAME)$(SO)
 BINARY   = $(BUILD_DIR)/$(NAME)$(SO)
-
+PRE_DIR = $(BUILD_DIR)/pre-$(NAME)$(SO)
 # Compilation flags
 ifeq ($(CC),clang)
 CXX := clang++
@@ -26,13 +26,18 @@ CFLAGS  := -O2 -MMD -Wall -Werror $(INCLUDES) $(CFLAGS)
 LDFLAGS := -O2 $(LDFLAGS)
 
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o) $(CXXSRC:%.cc=$(OBJ_DIR)/%.o)
-
+PRES = $(SRCS:%.c=$(PRE_DIR)/%.i)
 # Compilation patterns
 $(OBJ_DIR)/%.o: %.c
 	@echo + CC $<
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c -o $@ $<
 	$(call call_fixdep, $(@:.o=.d), $@)
+
+$(PRE_DIR)/%.i: %.c
+	@echo + CC $<
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -E -o $@ $<
 
 $(OBJ_DIR)/%.o: %.cc
 	@echo + CXX $<
@@ -52,6 +57,9 @@ app: $(BINARY)
 $(BINARY): $(OBJS) $(ARCHIVES)
 	@echo + LD $@
 	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(ARCHIVES) $(LIBS)
+
+# 输出预处理结果
+pre: $(PRES)
 
 clean:
 	-rm -rf $(BUILD_DIR)

@@ -176,9 +176,9 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
 
 
-  { "si", "step instruction", cmd_si },
+  { "si", "step instruction\n si [N]", cmd_si },
   { "info", "print info\n  info r: print registry\n  info w: print monitor point", cmd_info },
-  { "x", "scan memory\n  x N $reg", cmd_scan },
+  { "x", "scan memory\n  x N $reg or addr(0x)", cmd_scan },
   { "p", "eval expr \n  p expr", cmd_eval_expr },
   { "w", "add monitor \n  w expr", cmd_add_monitor },
   { "d", "delete monitor \n  d N", cmd_delete_monitor },

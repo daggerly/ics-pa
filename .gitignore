@@ -1,6 +1,9 @@
-*.*
-*
+
 !*/
+!*.h
+!*.c
+!*.cc
+!*.S
 !/nemu/*
 !/nexus-am/*
 !/nanos-lite/*
@@ -9,3 +12,5 @@
 !README.md
 !.gitignore
 !init.sh
+.idea
+.vscode

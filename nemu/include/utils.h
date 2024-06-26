@@ -75,3 +75,8 @@ uint64_t get_time();
 
 
 #endif
+
+void print_int32_binary(char* name, int num);
+void print_u32_binary(char* name, uint32_t num);
+void print_u64_binary(char* name, word_t num);
+void print_int64_binary(char* name, int64_t num);

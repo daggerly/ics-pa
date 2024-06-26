@@ -28,9 +28,13 @@ void isa_reg_display() {
     uint64_t size = sizeof(cpu.gpr)/sizeof(cpu.gpr[0]);
     uint64_t i = 0;
     for( ;i<size;i++){
-        printf("%s: 0x%08lx\n", regs[i], cpu.gpr[i]);
+        printf("%s: 0x%016lx\n", regs[i], cpu.gpr[i]);
     }
     printf("\n");
+}
+
+const char * isa_reg_idx2name(int idx){
+    return regs[idx];
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
