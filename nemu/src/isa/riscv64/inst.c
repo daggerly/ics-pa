@@ -65,7 +65,7 @@ static int decode_exec(Decode *s) {
   int rd = 0;
   word_t src1 = 0, src2 = 0, imm = 0;
   int64_t int64_src1 = 0, int64_src2 = 0;
-  uint32_t uint32_src1 = 0;
+  uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
   // Log("decoding 0x%lx ", s->pc);
@@ -83,8 +83,21 @@ static int decode_exec(Decode *s) {
   //           imm| rs1 |funct3   | rd  | opcode
   INSTPAT("??????? ????? ????? 011 ????? 00000 11", ld     , I, R(rd) = Mr(src1 + imm, 8));
     //       imm  | rs1 |funct3|  rd | opcode
-  INSTPAT("??????? ????? ????? 010    ????? 00000 11", lw     , I, R(rd) = SEXT(Mr(src1 + imm, 4), 32));
-  // 将8位数0扩展到64位
+  INSTPAT("??????? ????? ????? 010    ????? 00000 11", lw     , I, 
+    R(rd) = SEXT(Mr(src1 + imm, 4), 32);
+    // Log("lw read %lx from %lx", R(rd), src1 + imm);
+  );
+  // 从内存加载一个16位的值 符号扩展到64位
+  INSTPAT("???????????? ????? 001 ????? 0000011", lh      , I, 
+    R(rd) = SEXT(Mr(src1 + imm, 2), 16);
+    // Log("lh read %lx from %lx", R(rd), src1 + imm);
+  );
+  // 从内存加载一个16位的值 0扩展到64位
+  INSTPAT("???????????? ????? 101 ????? 0000011", lhu      , I, 
+    R(rd) = Mr(src1 + imm, 2);
+    // Log("lhu read %lx from %lx", R(rd), src1 + imm);
+  );
+  // 从内存加载一个8位的值 0扩展到64位
   //          imm      | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 100 ????? 0000011", lbu      , I, 
     // isa_reg_display();
@@ -93,6 +106,7 @@ static int decode_exec(Decode *s) {
     R(rd) = Mr(src1 + imm, 1);
     // isa_reg_display();
   );
+
   // 写入32位数据到rs1+imm
   //        imm   | rs2 | rs1 |funct3|imm| opcode
   INSTPAT("??????? ????? ????? 011 ????? 01000 11", sd     , S, Mw(src1 + imm, 8, src2));
@@ -109,9 +123,7 @@ static int decode_exec(Decode *s) {
 
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   //             imm   | rs1 |   | rd  | opcode
-  INSTPAT("???????????? ????? 000 ????? 00100 11", addi      , I, 
-  R(rd) = (uint32_t)(src1 + imm);
-  );
+  INSTPAT("???????????? ????? 000 ????? 00100 11", addi      , I,  R(rd) = (uint32_t)(src1 + imm));
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 111 ????? 00100 11", andi      , I, 
     R(rd) = src1 & imm;
@@ -120,9 +132,10 @@ static int decode_exec(Decode *s) {
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 000 ????? 00110 11", addiw      , I, 
     // isa_reg_display();
-    // R(rd) = SEXT(src1 + imm, 32);
-    R(rd) = src1 + SEXT(imm, 12);
-    // Log("decoding addiw: %s = %lu + %lu = %lu", isa_reg_idx2name(rd), src1, SEXT(imm, 12), R(rd));
+    // LOG_OPERAND();
+    uint32_src1 = src1 + SEXT(imm, 12);
+    R(rd) = SEXT(uint32_src1, 32);
+    // Log("addiw: %s = 0x%lx + 0x%lx = 0x%x extend to 0x%lx", isa_reg_idx2name(rd), src1, SEXT(imm, 12), uint32_src1, R(rd));
   );
   // R(rs1)与有符号imm异或
   //             imm   | rs1 |   | rd  | opcode
@@ -146,9 +159,8 @@ static int decode_exec(Decode *s) {
   // 不符合手册，不知道为什么
   //               shamt| rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 001 ????? 0010011", slli      , I, 
-    LOG_OPERAND();
     R(rd) = src1 << imm;
-    Log("decoding slli: 0x%lx left shift %lu to 0x%lx, save into %s", src1, imm, R(rd), isa_reg_idx2name(rd));
+    // Log("decoding slli: 0x%lx left shift %lu to 0x%lx, save into %s", src1, imm, R(rd), isa_reg_idx2name(rd));
   );
  // 算术右移
   // TODO bubble-sort中80000040:	01e7d613  srli	a2,a5,0x1e的译码为
@@ -165,7 +177,6 @@ static int decode_exec(Decode *s) {
 
   // imm[20]|imm[10:1] |imm[11]|imm[19:12]| rd  |opcode
   INSTPAT("? ??????????    ?    ????????   ????? 11011 11", jal, J, 
-      Log("decoding jal: 0x%lx ", s->pc);
       R(rd) = s->snpc;
       s->dnpc = s->pc + imm;
   );
@@ -247,12 +258,19 @@ static int decode_exec(Decode *s) {
     R(rd) = SEXT(uint32_src1, 32);
     // Log("decoding sllw: %lx left shift %ld to %lx, save into %s", src1, src2, SEXT(uint32_src1, 32), isa_reg_idx2name(rd));
   );
+  // 64位减法
+  INSTPAT("0100000 ????? ????? 000 ????? 0110011", sub, RR, R(rd) = src1 - src2);
+  // 32位减法
+  INSTPAT("0100000 ????? ????? 000 ????? 0111011", subw, RR, 
+      uint32_src1 = src1;
+      uint32_src2 = src2;
+      uint32_src1 = uint32_src1 - uint32_src2;
+      R(rd) = SEXT(uint32_src1, 32);
+  );
   //              | rs2 | rs1 |   |rd   | opcode
-  INSTPAT("0100000 ????? ????? 000 ????? 01100 11", sub, RR, R(rd) = src1 - src2);
+  INSTPAT("0000000 ????? ????? 111 ????? 0110011", and, RR, R(rd) = src1 & src2);
   //              | rs2 | rs1 |   |rd   | opcode
-  INSTPAT("0000000 ????? ????? 111 ????? 01100 11", and, RR, R(rd) = src1 & src2);
-  //              | rs2 | rs1 |   |rd   | opcode
-  INSTPAT("0000000 ????? ????? 110 ????? 01100 11", and, RR, R(rd) = src1 | src2);
+  INSTPAT("0000000 ????? ????? 110 ????? 0110011", and, RR, R(rd) = src1 | src2);
   // 有符号比较
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000000 ????? ????? 010 ????? 01100 11", slt, RR, 
