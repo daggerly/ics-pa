@@ -68,7 +68,7 @@ static int decode_exec(Decode *s) {
   uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
-  // Log("decoding 0x%lx ", s->pc);
+  // Log("0x%lx ", s->pc);
 #define INSTPAT_INST(s) ((s)->isa.inst.val)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
@@ -123,11 +123,14 @@ static int decode_exec(Decode *s) {
 
   INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak , N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   //             imm   | rs1 |   | rd  | opcode
-  INSTPAT("???????????? ????? 000 ????? 00100 11", addi      , I,  R(rd) = (uint32_t)(src1 + imm));
+  INSTPAT("???????????? ????? 000 ????? 00100 11", addi      , I,  
+    R(rd) = src1 + imm;
+    // Log("addi: %s = 0x%lx + 0x%lx = 0x%lx", isa_reg_idx2name(rd), src1, imm, R(rd));
+  );
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 111 ????? 00100 11", andi      , I, 
     R(rd) = src1 & imm;
-    // Log("decoding andi: %s set to %lu", isa_reg_idx2name(rd), src1 & imm);
+    // Log("andi: %s set to %lu", isa_reg_idx2name(rd), src1 & imm);
   );
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 000 ????? 00110 11", addiw      , I, 
@@ -141,18 +144,36 @@ static int decode_exec(Decode *s) {
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 100 ????? 00100 11", xori      , I, 
     R(rd) = src1 ^ SEXT(imm, 12);
-    // Log("decoding xori: %s = 0x%lx ^ 0x%lx = 0x%lx", isa_reg_idx2name(rd), src1, SEXT(imm, 12), R(rd));
+    // Log("xori: %s = 0x%lx ^ 0x%lx = 0x%lx", isa_reg_idx2name(rd), src1, SEXT(imm, 12), R(rd));
   );
-  // 算术右移
+  // 64位算术右移
   //               shamt| rs1 |   | rd  | opcode
   INSTPAT("0100000 ????? ????? 101 ????? 0010011", srai      , I, 
     imm &= 0b11111;
     int64_src1 = (int64_t)src1;
     int64_src1 = int64_src1 >> imm;
     R(rd) = (word_t)int64_src1;
-    // Log("decoding srai: %lx right shift %lu to %lx, save into %s", src1, imm, int64_src1, isa_reg_idx2name(rd));
+    // Log("srai: %lx right shift %lu to %lx, save into %s", src1, imm, int64_src1, isa_reg_idx2name(rd));
   );
-  // 算术左移
+  // 32位算术右移(带符号右移)
+  INSTPAT("0100000 ????? ????? 101 ????? 0011011", sraiw      , I, 
+    imm = imm & 0b11111;
+    int32_src1 = src1;
+    int32_src2 = int32_src1 >> imm;
+    src1 = int32_src2;
+    R(rd) = src1;
+    // Log("slaiw: 0x%x right shift %lu to 0x%lx, save into %s", int32_src1, imm, R(rd), isa_reg_idx2name(rd));
+  );
+  // 32位算术右移(带符号右移)
+  INSTPAT("0100000 ????? ????? 101 ????? 0111011", sraw      , RR, 
+    src2 = src2 & 0b11111;
+    int32_src1 = src1;
+    int32_src2 = int32_src2 >> src2;
+    src1 = int32_src2;
+    R(rd) = src1;
+    Log("sraw: 0x%x right shift %lu to 0x%lx, save into %s", int32_src1, imm, R(rd), isa_reg_idx2name(rd));
+  );
+  // 逻辑左移
   // TODO bubble-sort中8000003c:	02059793 slli	a5,a1,0x20的译码为
   //         0000001 00000 01011 001 01111 0010011
   // 而手册上是0000000 ????? ????? 001 ????? 0010011
@@ -160,9 +181,17 @@ static int decode_exec(Decode *s) {
   //               shamt| rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 001 ????? 0010011", slli      , I, 
     R(rd) = src1 << imm;
-    // Log("decoding slli: 0x%lx left shift %lu to 0x%lx, save into %s", src1, imm, R(rd), isa_reg_idx2name(rd));
+    // Log("slli: 0x%lx left shift %lu to 0x%lx, save into %s", src1, imm, R(rd), isa_reg_idx2name(rd));
   );
- // 算术右移
+  // 32位逻辑左移
+  INSTPAT("0000000 ????? ????? 001 ????? 0011011", slliw      , I, 
+    imm = imm & 0b11111;
+    uint32_src1 = src1;
+    uint32_src2 = uint32_src1 << imm;
+    R(rd) = SEXT(uint32_src2, 32);
+    // Log("slliw: 0x%x left shift %lu to 0x%lx, save into %s", uint32_src1, imm, R(rd), isa_reg_idx2name(rd));
+  );
+  // 64位逻辑右移
   // TODO bubble-sort中80000040:	01e7d613  srli	a2,a5,0x1e的译码为
   //         0000001 01110 01111 101 01100 0010011
   // 而手册上是0000000 ????? ????? 101 ????? 0010011
@@ -170,8 +199,18 @@ static int decode_exec(Decode *s) {
   //               shamt| rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 101 ????? 0010011", srli      , I, 
     R(rd) = src1 >> imm;
-    // Log("decoding slli: 0x%lx right shift %lu to 0x%lx, save into %s", src1, imm, src1 >> imm, isa_reg_idx2name(rd));
+    // Log("srli: 0x%lx right shift %lu to 0x%lx, save into %s", src1, imm, src1 >> imm, isa_reg_idx2name(rd));
   );
+  // 32位逻辑右移(无符号右移)
+  INSTPAT("0000000 ????? ????? 101 ????? 0011011", srliw      , I, 
+    imm = imm & 0b11111;
+    uint32_src1 = src1;
+    uint32_src2 = uint32_src1 >> imm;
+    src1 = uint32_src2;
+    R(rd) = src1;
+    Log("srliw: 0x%x right shift %lu to 0x%lx, save into %s", uint32_src1, imm, src1, isa_reg_idx2name(rd));
+  );
+
   //             imm           | rd  | opcode
   INSTPAT("???????????????????? ????? 01101 11", lui          , U, R(rd) = imm); 
 
@@ -194,9 +233,9 @@ static int decode_exec(Decode *s) {
       s->dnpc = s->pc + imm;
     } 
     // if (int64_src1 < int64_src2) {
-    //   Log("decoding &0x%lx blt: src1: %ld < src2:%ld, dnpc = pc(%lx) + %lx ", s->pc, int64_src1, int64_src2, s->pc, imm);
+    //   Log("&0x%lx blt: src1: %ld < src2:%ld, dnpc = pc(%lx) + %lx ", s->pc, int64_src1, int64_src2, s->pc, imm);
     // } else{
-    //   Log("decoding &0x%lx blt: src1: %ld >= src2:%ld", s->pc, int64_src1, int64_src2);
+    //   Log("&0x%lx blt: src1: %ld >= src2:%ld", s->pc, int64_src1, int64_src2);
     // }
   );
   // 
@@ -208,9 +247,9 @@ static int decode_exec(Decode *s) {
       s->dnpc = s->pc + imm;
     } 
     // if (int64_src1 >= int64_src2) {
-    //   Log("decoding &0x%lx bge: src1: %ld >= src2:%ld, dnpc = pc(%lx) + 0x%lx ", s->pc, int64_src1, int64_src2, s->pc, imm);
+    //   Log("&0x%lx bge: src1: %ld >= src2:%ld, dnpc = pc(%lx) + 0x%lx ", s->pc, int64_src1, int64_src2, s->pc, imm);
     // } else{
-    //   Log("decoding &0x%lx bge: src1: %ld < src2:%ld", s->pc, int64_src1, int64_src2);
+    //   Log("&0x%lx bge: src1: %ld < src2:%ld", s->pc, int64_src1, int64_src2);
     // }
   );
 
@@ -229,16 +268,16 @@ static int decode_exec(Decode *s) {
       s->dnpc = s->pc + imm;
     }
     // if (src1 != src2) {
-    //   Log("decoding &0x%lx bne: src1: %lx != src2:%lx, dnpc = pc(%lx) + %lx = %lx ", s->pc, src1, src2, s->pc, imm, s->dnpc);
+    //   Log("&0x%lx bne: src1: %lx != src2:%lx, dnpc = pc(%lx) + %lx = %lx ", s->pc, src1, src2, s->pc, imm, s->dnpc);
     // } else{
-    //   Log("decoding &0x%lx bne: src1: %lx == src2:%lx", s->pc, src1, src2);
+    //   Log("&0x%lx bne: src1: %lx == src2:%lx", s->pc, src1, src2);
     // }
   );
   // 64位加法
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000000 ????? ????? 000 ????? 01100 11", add, RR, 
     R(rd) = src1 + src2;
-  // Log("decoding add &0x%08lx: R(rd)(%s) set to src1: %lx + src2:%lx = %lx ", s->pc, isa_reg_idx2name(rd), src1, src2, src1 + src2);
+  // Log("add &0x%08lx: R(rd)(%s) set to src1: %lx + src2:%lx = %lx ", s->pc, isa_reg_idx2name(rd), src1, src2, src1 + src2);
   );
 
   // 32位加法，结果符号扩展成64位
@@ -247,7 +286,7 @@ static int decode_exec(Decode *s) {
     src1 = (uint32_t)src1;
     src2 = (uint32_t)src2;
     R(rd) = SEXT(src1 + src2, 32);
-    // Log("decoding addw &0x%08lx: R(rd)(%s) set to src1: %lx + src2:%lx = %lx ", s->pc, isa_reg_idx2name(rd), src1, src2, SEXT(src1 + src2, 32));
+    // Log("addw &0x%08lx: R(rd)(%s) set to src1: %lx + src2:%lx = %lx ", s->pc, isa_reg_idx2name(rd), src1, src2, SEXT(src1 + src2, 32));
   );
   // 逻辑左移，左移位数为rs2[4:0], 对32位值操作，结果符号扩展成64位
   //              | rs2 | rs1 |   |rd   | opcode
@@ -256,7 +295,7 @@ static int decode_exec(Decode *s) {
     uint32_src1 = (uint32_t)src1;
     uint32_src1 = uint32_src1 << src2;
     R(rd) = SEXT(uint32_src1, 32);
-    // Log("decoding sllw: %lx left shift %ld to %lx, save into %s", src1, src2, SEXT(uint32_src1, 32), isa_reg_idx2name(rd));
+    // Log("sllw: %lx left shift %ld to %lx, save into %s", src1, src2, SEXT(uint32_src1, 32), isa_reg_idx2name(rd));
   );
   // 64位减法
   INSTPAT("0100000 ????? ????? 000 ????? 0110011", sub, RR, R(rd) = src1 - src2);
@@ -278,9 +317,9 @@ static int decode_exec(Decode *s) {
     int64_src2 = (int64_t)src2;
     R(rd) = (int64_src1 < int64_src2) ?  1 : 0;
     // if (int64_src1 < int64_src2) {
-    //   Log("decoding slt: src1: %ld < src2:%ld, R(rd)(%d) set to 1 ", int64_src1, int64_src2, rd);
+    //   Log("slt: src1: %ld < src2:%ld, R(rd)(%d) set to 1 ", int64_src1, int64_src2, rd);
     // } else{
-    //   Log("decoding slt: src1: %ld >= src2:%ld, R(rd)(%d) set to 0 ", int64_src1, int64_src2, rd);
+    //   Log("slt: src1: %ld >= src2:%ld, R(rd)(%d) set to 0 ", int64_src1, int64_src2, rd);
     // }
   );
 
@@ -289,12 +328,17 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000000 ????? ????? 011 ????? 01100 11", sltu, RR, 
     R(rd) = (src1 < src2) ?  1 : 0;
     // if (src1 < src2) {
-    //   Log("decoding sltu: src1: %lu < src2:%lu, %s set to 1 ", src1, src2, isa_reg_idx2name(rd));
+    //   Log("sltu: src1: %lu < src2:%lu, %s set to 1 ", src1, src2, isa_reg_idx2name(rd));
     // } else{
-    //   Log("decoding sltu: src1: %lu >= src2:%lu, %s set to 0 ", src1, src2, isa_reg_idx2name(rd));
+    //   Log("sltu: src1: %lu >= src2:%lu, %s set to 0 ", src1, src2, isa_reg_idx2name(rd));
     // }
   );
-
+  // 有符号相乘
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000001 ????? ????? 000 ????? 0110011", mul, RR, 
+    R(rd) = src1 * src2;
+    Log("mul: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
+  );
   // 有符号低32位相乘，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000001 ????? ????? 000 ????? 01110 11", mulw, RR, 
@@ -302,7 +346,7 @@ static int decode_exec(Decode *s) {
     int32_src2 = src2;
     int32_src1 = int32_src1 * int32_src2;
     R(rd) = SEXT(int32_src1, 32);
-    // Log("decoding mulw: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
+    // Log("mulw: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
 
   );
   // 有符号低32位相除，结果的低32位有符号扩展至64位
@@ -312,7 +356,7 @@ static int decode_exec(Decode *s) {
     int32_src2 = src2;
     int32_src1 = int32_src1 / int32_src2;
     R(rd) = SEXT(int32_src1, 32);
-    // Log("decoding divw: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
+    // Log("divw: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
 
   );
   // 低32位相除的余数，结果的低32位有符号扩展至64位
@@ -322,7 +366,7 @@ static int decode_exec(Decode *s) {
     int32_src2 = src2;
     int32_src1 = int32_src1 % int32_src2;
     R(rd) = SEXT(int32_src1, 32);
-    // Log("decoding remw: src1: 0x%lx %% src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
+    // Log("remw: src1: 0x%lx %% src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), isa_reg_idx2name(rd));
   );
 
   //          imm     |  rs1 |   |rd   | opcode
