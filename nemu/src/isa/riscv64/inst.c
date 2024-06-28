@@ -168,10 +168,10 @@ static int decode_exec(Decode *s) {
   INSTPAT("0100000 ????? ????? 101 ????? 0111011", sraw      , RR, 
     src2 = src2 & 0b11111;
     int32_src1 = src1;
-    int32_src2 = int32_src2 >> src2;
+    int32_src2 = int32_src1 >> src2;
     src1 = int32_src2;
     R(rd) = src1;
-    Log("sraw: 0x%x right shift %lu to 0x%lx, save into %s", int32_src1, imm, R(rd), isa_reg_idx2name(rd));
+    // Log("sraw: 0x%x right shift %lu to 0x%lx, save into %s", int32_src1, src2, R(rd), isa_reg_idx2name(rd));
   );
   // 逻辑左移
   // TODO bubble-sort中8000003c:	02059793 slli	a5,a1,0x20的译码为
@@ -201,16 +201,24 @@ static int decode_exec(Decode *s) {
     R(rd) = src1 >> imm;
     // Log("srli: 0x%lx right shift %lu to 0x%lx, save into %s", src1, imm, src1 >> imm, isa_reg_idx2name(rd));
   );
-  // 32位逻辑右移(无符号右移)
+  // 32位逻辑右移(无符号右移),根据立即数
   INSTPAT("0000000 ????? ????? 101 ????? 0011011", srliw      , I, 
     imm = imm & 0b11111;
     uint32_src1 = src1;
     uint32_src2 = uint32_src1 >> imm;
     src1 = uint32_src2;
     R(rd) = src1;
-    Log("srliw: 0x%x right shift %lu to 0x%lx, save into %s", uint32_src1, imm, src1, isa_reg_idx2name(rd));
+    // Log("srliw: 0x%x right shift %lu to 0x%lx, save into %s", uint32_src1, imm, src1, isa_reg_idx2name(rd));
   );
-
+  // 32位逻辑右移(无符号右移)，根据寄存器内数
+  INSTPAT("0000000 ????? ????? 101 ????? 0111011", srlw      , RR, 
+    src2 = src2 & 0b11111;
+    uint32_src1 = src1;
+    uint32_src2 = uint32_src1 >> src2;
+    src1 = uint32_src2;
+    R(rd) = src1;
+    // Log("srlw: 0x%x right shift %lu to 0x%lx, save into %s", uint32_src1, src2, src1, isa_reg_idx2name(rd));
+  );
   //             imm           | rd  | opcode
   INSTPAT("???????????????????? ????? 01101 11", lui          , U, R(rd) = imm); 
 
@@ -238,7 +246,19 @@ static int decode_exec(Decode *s) {
     //   Log("&0x%lx blt: src1: %ld >= src2:%ld", s->pc, int64_src1, int64_src2);
     // }
   );
-  // 
+  // 无符号比较
+  // imm[12]|imm[10:5]| rs2 | rs1 |   |imm[4:1]|imm[11]| opcode
+  // if (rs1 < rs2) pc += sext(offset)
+  INSTPAT("? ??????    ????? ????? 110 ????     ?       11000 11", bltu, B, 
+    if (src1 < src2) {
+      s->dnpc = s->pc + imm;
+    } 
+    // if (src1 < src2) {
+    //   Log("bltu: src1: 0x%lx < src2:0x%lx, dnpc(0x%lx) = pc(0x%lx) + 0x%lx ", src1, src2, s->dnpc, s->pc, imm);
+    // } else{
+    //   Log("bltu: src1: 0x%ld >= src2:0x%ld", src1, src2);
+    // }
+  );
   // if (rs1 >=s rs2) pc += sext(offset)
   INSTPAT("? ??????    ????? ????? 101 ????     ?       11000 11", bge, B, 
     int64_src1 = (int64_t)src1;
