@@ -13,7 +13,8 @@ CFLAGS    += -fdata-sections -ffunction-sections
 LDFLAGS   += -T $(AM_HOME)/scripts/linker.ld \
              --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   += --gc-sections -e _start
-NEMUFLAGS += -l $(shell dirname $(IMAGE).elf)/nemu-log.txt
+# 设置 -b 参数，进入sdb_set_batch_mode函数，自动执行客户程序，不需要按c
+NEMUFLAGS += -l $(shell dirname $(IMAGE).elf)/nemu-log.txt -b
 
 CFLAGS += -DMAINARGS=\"$(mainargs)\"
 CFLAGS += -I$(AM_HOME)/am/src/platform/nemu/include
@@ -21,11 +22,12 @@ CFLAGS += -I$(AM_HOME)/am/src/platform/nemu/include
 
 image: $(IMAGE).elf
 	@$(OBJDUMP) -d $(IMAGE).elf > $(IMAGE).txt
-	@echo + OBJCOPY "->" $(IMAGE_REL).bin
+	@echo abstract-machine/scripts/platform/nemu:24 + OBJCOPY "->" $(IMAGE_REL).bin
 	@$(OBJCOPY) -S --set-section-flags .bss=alloc,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 run: image
-	$(MAKE) -C $(NEMU_HOME) ISA=$(ISA) run ARGS="$(NEMUFLAGS)" IMG=$(IMAGE).bin
+	@echo abstract-machine/scripts/platform/nemu:28 MAKE -> run
+	@$(MAKE) -C $(NEMU_HOME) ISA=$(ISA) run ARGS="$(NEMUFLAGS)"  IMG=$(IMAGE).bin
 
 gdb: image
 	$(MAKE) -C $(NEMU_HOME) ISA=$(ISA) gdb ARGS="$(NEMUFLAGS)" IMG=$(IMAGE).bin

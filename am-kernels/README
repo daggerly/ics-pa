@@ -6,6 +6,7 @@ Bug reports and suggestions go to Yanyan Jiang (jyy@nju.edu.cn) and Zihao
 Yu (yuzihao@ict.ac.cn).
 
 # 如何生成可执行文件xx？
+## 1
 执行make后，创建Makefile.xx
 创建Makefile.xx的内容是：
 ```
@@ -14,14 +15,34 @@ Yu (yuzihao@ict.ac.cn).
     LIBS += klib
     include /home/liuyang/Downloads/ics2022/abstract-machine/Makefile
 ```
-而在abstract-machine/Makefile文件中, 生成了xx.elf
+定义了SRCS、LIBS变量，引入了abstract-machine/Makefile
+## 2 
+在abstract-machine/Makefile文件
+    1 引入了abstract-machine/scripts/riscv64-nemu.mk
+    2 定义了xx.elf目标
+## 3 
+riscv64-nemu.mk
+    1 引入abstract-machine/scripts/isa/riscv64.mk、abstract-machine/scripts/platform/nemu.mk
+## 4 
+    abstract-machine/scripts/platform/nemu.mk 定义了run目标xx.elf
+生成了
 -include $(AM_HOME)/scripts/$(ARCH).mk引入了$(AM_HOME)/scripts/riscv64-nemu.mk
 其又引入了$(AM_HOME)/scripts/platform/nemu.mk，这里使用xx.elf生成了xx.txt和xx.bin
 最终在nemu中执行bin文件
 
+# 结束码是如何设置的？
+编译时，使用am调用bin文件，am的入口函数为_trm_init，其中调用了halt函数->nemu_trap函数，逻辑为将halt参数中的结束码放置在a0寄存器，
+nemu_trap函数的汇编代码就是ebreak。所以在inst.c中ebreak指令的执行逻辑就是取出a0寄存器的值，放在nemu_state.halt_ret中，并且设置了nemu_state.state
+
+# Makefile依赖关系
+am-kernels/tests/cpu-tests/Makefile =>
+    am-kernels/tests/cpu-tests/Makefile.xx <-
+        abstract-machine/Makefile <- 
+            abstract-machine/scripts/riscv64-nemu.mk <-
+                abstract-machine/scripts/isa/riscv64.mk
+                abstract-machine/scripts/platform/nemu.mk <-
+                    nemu/Makefile
+
 调用方法
 cd tests/cpu-tests
-
-
-make ARCH=riscv64-nemu ALL=goldbach run
-make ARCH=riscv64-nemu ALL=if-else run
+make ARCH=riscv64-nemu ALL=to-lower-case run

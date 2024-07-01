@@ -272,7 +272,18 @@ static int decode_exec(Decode *s) {
     //   Log("&0x%lx bge: src1: %ld < src2:%ld", s->pc, int64_src1, int64_src2);
     // }
   );
-
+  // if (rs1 >= rs2) pc += sext(offset)
+  INSTPAT("? ??????    ????? ????? 111 ????     ?       11000 11", bgeu, B, 
+    if (src1 >= src2) {
+      s->dnpc = s->pc + imm;
+    } 
+    // if (int64_src1 >= int64_src2) {
+    //   Log("&0x%lx bge: src1: %ld >= src2:%ld, dnpc = pc(%lx) + 0x%lx ", s->pc, int64_src1, int64_src2, s->pc, imm);
+    // } else{
+    //   Log("&0x%lx bge: src1: %ld < src2:%ld", s->pc, int64_src1, int64_src2);
+    // }
+  );
+  
   // 相等则跳转
   // imm[12]|imm[10:5]| rs2 | rs1 |   |imm[4:1]|imm[11]| opcode
   INSTPAT("? ??????    ????? ????? 000 ????        ?     11000 11", beq, B, 

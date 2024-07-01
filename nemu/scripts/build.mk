@@ -55,7 +55,7 @@ $(OBJ_DIR)/%.o: %.cc
 app: $(BINARY)
 
 $(BINARY): $(OBJS) $(ARCHIVES)
-	@echo + LD $@
+	@echo nemu/scripts/build.mk:58 + LD $@
 	@$(LD) -o $@ $(OBJS) $(LDFLAGS) $(ARCHIVES) $(LIBS)
 
 # 输出预处理结果
