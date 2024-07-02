@@ -68,7 +68,12 @@ static int decode_exec(Decode *s) {
   uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
-  // Log("0x%lx ", s->pc);
+  Log("execing: 0x%lx", s->pc);
+  word_t addr = 0x800004a8;
+  for(int p_i=0;p_i<13;p_i++){
+    word_t p_c = vaddr_read(addr + p_i, 1);
+    Log("execing: %c %lu", (int)p_c, p_c);
+  }
 #define INSTPAT_INST(s) ((s)->isa.inst.val)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \

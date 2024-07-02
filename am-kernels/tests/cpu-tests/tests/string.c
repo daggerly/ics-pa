@@ -24,5 +24,7 @@ int main() {
 
 	check(memcmp(memset(str, '#', 5), s[5], 5) == 0);
 
+	check(memcmp(memcpy(str, s[5], 5), s[5], 5) == 0);
+
 	return 0;
 }
