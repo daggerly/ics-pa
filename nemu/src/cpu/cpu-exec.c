@@ -30,6 +30,10 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
+#define IRINGBUF_LENGTH 16
+uint8_t iringbuf_index = 0;
+char iringbuf[IRINGBUF_LENGTH][128];
+
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
@@ -37,14 +41,22 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
+
+  strcpy(iringbuf[iringbuf_index], _this->logbuf);
+  iringbuf_index ++;
+  iringbuf_index = iringbuf_index %  IRINGBUF_LENGTH;
+
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
-  if (CONFIG_WATCHPOINT){
+#ifdef CONFIG_WATCHPOINT
+  do{
     bool changed = update_watchpoint_value();
     if (changed) {
       printf("watchpoint发生改变, 中断!!!\n");
       nemu_state.state = NEMU_STOP;
     }
-  }
+  }while(0);
+#endif
+  
 
 }
 
@@ -99,8 +111,19 @@ static void statistic() {
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
 }
 
+void trace_display(){
+    /* iringbu中最早的一条记录*/
+  uint8_t tmp_iringbuf_index = (iringbuf_index + 1) % IRINGBUF_LENGTH, i = 0;
+  for( ;i<IRINGBUF_LENGTH;i++){
+      printf("%s\n", iringbuf[tmp_iringbuf_index]);
+      tmp_iringbuf_index ++;
+      tmp_iringbuf_index %= IRINGBUF_LENGTH;
+  }
+  printf("\n");
+}
 void assert_fail_msg() {
   isa_reg_display();
+  trace_display();
   statistic();
 }
 
