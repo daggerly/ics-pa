@@ -16,6 +16,7 @@
 #include <common.h>
 
 void init_monitor(int, char *[]);
+void finish_monitor();
 void am_init_monitor();
 void engine_start();
 int is_exit_status_bad();
@@ -32,6 +33,11 @@ int main(int argc, char *argv[]) {
 
   /* Start engine. */
   engine_start();
+
+#ifdef CONFIG_TARGET_AM
+#else
+  finish_monitor();
+#endif
 
   return is_exit_status_bad();
 }

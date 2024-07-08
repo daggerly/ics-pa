@@ -11,7 +11,7 @@ COLOR_NONE  = \033[0m
 ALL = $(basename $(notdir $(shell find tests/. -name "*.c")))
 
 all: $(addprefix Makefile., $(ALL))
-	@echo "" $(ALL)
+	@echo am-kernels/tests/cpu-tests/Makefile:14 "" $(ALL)
 
 $(ALL): %: Makefile.%
 

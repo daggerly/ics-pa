@@ -29,7 +29,7 @@ OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o) $(CXXSRC:%.cc=$(OBJ_DIR)/%.o)
 PRES = $(SRCS:%.c=$(PRE_DIR)/%.i)
 # Compilation patterns
 $(OBJ_DIR)/%.o: %.c
-	@echo + CC $<
+	@echo nemu/scripts/build.md: 32 + CC $<
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c -o $@ $<
 	$(call call_fixdep, $(@:.o=.d), $@)

@@ -45,4 +45,4 @@ am-kernels/tests/cpu-tests/Makefile =>
 
 调用方法
 cd tests/cpu-tests
-make ARCH=riscv64-nemu ALL=to-lower-case run
+make ARCH=riscv64-nemu ALL=hello-str run

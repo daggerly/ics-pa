@@ -18,6 +18,7 @@
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
+#include <elf-def.h>
 
 #define R(i) gpr(i)
 #define Mr vaddr_read
@@ -68,6 +69,7 @@ static int decode_exec(Decode *s) {
   uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
+  find_func_name(s->pc);
   // Log("execing: 0x%lx", s->pc);
   // word_t addr = 0x800004a8;
   // for(int p_i=0;p_i<13;p_i++){

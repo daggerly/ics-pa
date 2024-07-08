@@ -34,5 +34,28 @@ The main features of NEMU include
 * 2 types of I/O
   * port-mapped I/O and memory-mapped I/O
 
+# ELF format
+* e_ehsize = ELF header size
+* e_phoff  = Program header table file offset
+* e_phentsize = Program header table entry size
+* e_phnum = Program header table entry count
+* e_shoff = Section header table file offset
+* e_shentsize = Section header table entry size
+* e_shnum = Section header table entry count
+* e_shstrndx = Section header string table index ???
+
+0               ELF header
+e_phoff         program header table 
+            n * e_phentsize
+
+e_shoff         Section header table
+              |  section_name
+              |  section_type
+  e_shentsize |  section_offset
+              |        ...
+        n * e_shentsize
+      
+
+
 ## run
 `make -j run`

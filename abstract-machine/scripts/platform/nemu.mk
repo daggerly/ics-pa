@@ -14,7 +14,7 @@ LDFLAGS   += -T $(AM_HOME)/scripts/linker.ld \
              --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0
 LDFLAGS   += --gc-sections -e _start
 # 设置 -b 参数，进入sdb_set_batch_mode函数，自动执行客户程序，不需要按c
-NEMUFLAGS += -l $(shell dirname $(IMAGE).elf)/nemu-log.txt -b
+NEMUFLAGS += -l $(shell dirname $(IMAGE).elf)/nemu-log.txt -b -e $(IMAGE).elf
 
 CFLAGS += -DMAINARGS=\"$(mainargs)\"
 CFLAGS += -I$(AM_HOME)/am/src/platform/nemu/include
