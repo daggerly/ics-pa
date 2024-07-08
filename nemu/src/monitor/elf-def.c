@@ -2,15 +2,8 @@
 #include <elf.h>
 #include <isa.h>
 
-// 符号表基地址
-static void *sym_table_base = NULL;
 // 函数符号条目数量
 static uint64_t func_sym_num = 0;
-// 符号条目大小
-static uint64_t symbol_entry_size = sizeof(Elf64_Sym);
-// 符号名字表基地址
-static void *string_table_base = NULL;
-
 
 typedef struct
 {
@@ -60,6 +53,14 @@ char * find_func_name(uint64_t inst_vaddr){
 
 /* 解析一个ELF文件*/
 void parse_img_elf(char *image_elf_file){
+    void *elf_buf = NULL, 
+         // 符号表基地址
+         *sym_table_base = NULL,
+         // 符号名字表基地址
+         *string_table_base = NULL;
+    // 符号条目大小
+    const uint64_t symbol_entry_size = sizeof(Elf64_Sym);
+
     if (image_elf_file == NULL){
         Log("not set ELF file %c", '\0');
         return;
@@ -71,7 +72,6 @@ void parse_img_elf(char *image_elf_file){
     long size = ftell(fp);
     Log("The ELF file is %s, size = %ld", image_elf_file, size);
 
-    void *elf_buf = NULL;
     elf_buf = malloc(size);
     fseek(fp, 0, SEEK_SET);
     int ret = fread(elf_buf, size, 1, fp);
