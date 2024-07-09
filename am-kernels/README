@@ -28,7 +28,8 @@ riscv64-nemu.mk
 生成了
 -include $(AM_HOME)/scripts/$(ARCH).mk引入了$(AM_HOME)/scripts/riscv64-nemu.mk
 其又引入了$(AM_HOME)/scripts/platform/nemu.mk，这里使用xx.elf生成了xx.txt和xx.bin
-最终在nemu中执行bin文件
+执行了nemu的Makefile，参数为bin文件
+最终执行riscv64-nemu-interpreter
 
 # 结束码是如何设置的？
 编译时，使用am调用bin文件，am的入口函数为_trm_init，其中调用了halt函数->nemu_trap函数，逻辑为将halt参数中的结束码放置在a0寄存器，
@@ -43,6 +44,20 @@ am-kernels/tests/cpu-tests/Makefile =>
                 abstract-machine/scripts/platform/nemu.mk <-
                     nemu/Makefile
 
-调用方法
+
+# native执行流程
+native.mk中用g++生成可执行文件，直接调用该文件
+
+
+# 调用方法
 cd tests/cpu-tests
 make ARCH=riscv64-nemu ALL=hello-str run
+
+# 想要验证自己实现的这些函数时，就把这个宏打开
+# define __NATIVE_USE_KLIB__
+# 可以用putch输出字符串
+
+make ARCH=native ALL=string run
+
+cd tests/klib-tests
+make ARCH=native ALL=memset run
