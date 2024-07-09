@@ -18,7 +18,7 @@
 #include <cpu/cpu.h>
 #include <cpu/ifetch.h>
 #include <cpu/decode.h>
-#include <elf-def.h>
+#include <func-trace.h>
 
 #define R(i) gpr(i)
 #define Mr vaddr_read
@@ -69,7 +69,6 @@ static int decode_exec(Decode *s) {
   uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
-  find_func_name(s->pc);
   // Log("execing: 0x%lx", s->pc);
   // word_t addr = 0x800004a8;
   // for(int p_i=0;p_i<13;p_i++){
@@ -231,13 +230,17 @@ static int decode_exec(Decode *s) {
 
   // imm[20]|imm[10:1] |imm[11]|imm[19:12]| rd  |opcode
   INSTPAT("? ??????????    ?    ????????   ????? 11011 11", jal, J, 
-      R(rd) = s->snpc;
-      s->dnpc = s->pc + imm;
+    R(rd) = s->snpc;
+    s->dnpc = s->pc + imm;
+    IFDEF(CONFIG_FTRACE, print_call_trace(rd, s->dnpc, s->pc));
+    log_call_stack(rd, s->dnpc, s->pc);
   );
   //             imm   | rs1 |funct3| rd  |  opcode
   INSTPAT("???????????? ????? 000    ????? 11001 11", jalr, I, 
     R(rd) = s->snpc;
     s->dnpc = (src1 + imm) & ~1;
+    IFDEF(CONFIG_FTRACE, print_ret_trace(s->pc));
+    log_ret();
   );
   // imm[12]|imm[10:5]| rs2 | rs1 |   |imm[4:1]|imm[11]| opcode
   // if (rs1 <s rs2) pc += sext(offset)

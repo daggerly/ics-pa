@@ -17,6 +17,7 @@
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
+#include <func-trace.h>
 
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
@@ -31,8 +32,8 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 #define IRINGBUF_LENGTH 16
-uint8_t iringbuf_index = 0;
-char iringbuf[IRINGBUF_LENGTH][128];
+static uint8_t iringbuf_index = 0;
+static char iringbuf[IRINGBUF_LENGTH][128];
 
 void device_update();
 
@@ -111,7 +112,7 @@ static void statistic() {
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
 }
 
-void trace_display(){
+void itrace_display(){
     /* iringbu中最早的一条记录*/
   uint8_t tmp_iringbuf_index = (iringbuf_index + 1) % IRINGBUF_LENGTH, i = 0;
   for( ;i<IRINGBUF_LENGTH;i++){
@@ -121,9 +122,11 @@ void trace_display(){
   }
   printf("\n");
 }
+
 void assert_fail_msg() {
   isa_reg_display();
-  trace_display();
+  itrace_display();
+  print_call_stack();
   statistic();
 }
 
@@ -153,6 +156,7 @@ void cpu_exec(uint64_t n) {
            (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) :
             ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);
+      print_call_stack();
       // fall through
     case NEMU_QUIT: statistic();
   }

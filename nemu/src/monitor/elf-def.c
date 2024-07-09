@@ -44,7 +44,7 @@ SymInfo* SymInfoArray;
 char * find_func_name(uint64_t inst_vaddr){
     for(uint64_t i=0; i<func_sym_num; i++ ){
         if((SymInfoArray[i].addr <= inst_vaddr) && (inst_vaddr < SymInfoArray[i].end)){
-            printf("find_func_name %s\n", SymInfoArray[i].name);
+            // printf("find_func_name %s\n", SymInfoArray[i].name);
             return SymInfoArray[i].name;
         }
     }
