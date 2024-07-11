@@ -113,7 +113,8 @@ static void statistic() {
 }
 
 void itrace_display(){
-    /* iringbu中最早的一条记录*/
+  printf("instracion trace:\n");
+  /* iringbu中最早的一条记录*/
   uint8_t tmp_iringbuf_index = (iringbuf_index + 1) % IRINGBUF_LENGTH, i = 0;
   for( ;i<IRINGBUF_LENGTH;i++){
       printf("%s\n", iringbuf[tmp_iringbuf_index]);

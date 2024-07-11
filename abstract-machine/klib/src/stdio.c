@@ -30,34 +30,46 @@ int printf(const char *fmt, ...) {
     if (in_fmt){  /* 在格式化字符串中*/
       if (fmt[i] == 'd'){
         arg_d = va_arg(ap, int);
-        if (arg_d < 0){
-          putch('-');
-          copyed += 1;
-          arg_d = -arg_d;
-        }
-        arg_d_digit = arg_d;
         arg_d_n=1;
-        while (arg_d_digit > 0)
-        {
-          arg_d_n *= 10;
-          arg_d_digit /= 10;
-        }
-        arg_d_n /= 10;
-        while (arg_d_n > 0)
-        {
-          arg_d_digit = arg_d / arg_d_n;
-          putch(arg_d_digit + 48);
-          copyed += 1;
-          arg_d = arg_d % arg_d_n;
+          if (arg_d < 0){
+            putch('-');
+            copyed += 1;
+            // arg_d = -arg_d;
+            arg_d_n = -1;
+          }
+          arg_d_digit = arg_d;
+          if (arg_d > 0){
+            while (arg_d_digit > 0){
+              arg_d_n *= 10;
+              arg_d_digit /= 10;
+            }
+          }else{
+            while (arg_d_digit < 0){
+              arg_d_n *= 10;
+              arg_d_digit /= 10;
+            }
+          }
+          
           arg_d_n /= 10;
-        }
+          if (arg_d != 0){
+            while (arg_d_n != 0){
+              arg_d_digit = arg_d / arg_d_n;
+              putch(arg_d_digit + 48);
+              copyed += 1;
+              arg_d = arg_d % arg_d_n;
+              arg_d_n /= 10;
+            }
+          }else{
+            // 0
+            putch(arg_d + 48);
+            copyed += 1;
+          }
       }else if (fmt[i] == 's'){
         arg_s = va_arg(ap, char*);
         for(const char* arg_s_p=arg_s; *arg_s_p; arg_s_p++){
           putch(*arg_s_p);
+          copyed += 1;
         }
-        
-        copyed += strlen(arg_s);
         arg_s = NULL;
       }else{
         panic("Not implemented");
@@ -123,26 +135,39 @@ int sprintf(char *out, const char *fmt, ...) {
       if (in_fmt){  /* 在格式化字符串中*/
         if (fmt[i] == 'd'){
           arg_d = va_arg(ap, int);
+          arg_d_n=1;
           if (arg_d < 0){
             memset(out+copyed, '-', 1);
             copyed += 1;
-            arg_d = -arg_d;
+            // arg_d = -arg_d;
+            arg_d_n = -1;
           }
           arg_d_digit = arg_d;
-          arg_d_n=1;
-          while (arg_d_digit > 0)
-          {
-            arg_d_n *= 10;
-            arg_d_digit /= 10;
+          if (arg_d > 0){
+            while (arg_d_digit > 0){
+              arg_d_n *= 10;
+              arg_d_digit /= 10;
+            }
+          }else{
+            while (arg_d_digit < 0){
+              arg_d_n *= 10;
+              arg_d_digit /= 10;
+            }
           }
+          
           arg_d_n /= 10;
-          while (arg_d_n > 0)
-          {
-            arg_d_digit = arg_d / arg_d_n;
-            memset(out+copyed, arg_d_digit + 48, 1);
+          if (arg_d != 0){
+            while (arg_d_n != 0){
+              arg_d_digit = arg_d / arg_d_n;
+              memset(out+copyed, arg_d_digit + 48, 1);
+              copyed += 1;
+              arg_d = arg_d % arg_d_n;
+              arg_d_n /= 10;
+            }
+          }else{
+            // 0
+            memset(out+copyed, arg_d + 48, 1);
             copyed += 1;
-            arg_d = arg_d % arg_d_n;
-            arg_d_n /= 10;
           }
         }else if (fmt[i] == 's'){
           arg_s = va_arg(ap, char*);
