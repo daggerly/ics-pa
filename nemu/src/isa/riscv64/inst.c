@@ -131,7 +131,7 @@ static int decode_exec(Decode *s) {
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 000 ????? 00100 11", addi      , I,  
     R(rd) = src1 + imm;
-    Log("addi: %s = 0x%lx + 0x%lx = 0x%lx", reg_name(rd, sizeof(word_t)), src1, imm, R(rd));
+    // Log("addi: %s = 0x%lx + 0x%lx = 0x%lx", reg_name(rd, sizeof(word_t)), src1, imm, R(rd));
   );
   //             imm   | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 111 ????? 00100 11", andi      , I, 
@@ -378,7 +378,7 @@ static int decode_exec(Decode *s) {
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000001 ????? ????? 000 ????? 0110011", mul, RR, 
     R(rd) = src1 * src2;
-    Log("mul: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+    // Log("mul: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
   );
   // 有符号低32位相乘，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
