@@ -33,9 +33,6 @@ void isa_reg_display() {
     printf("\n");
 }
 
-const char * isa_reg_idx2name(int idx){
-    return regs[idx];
-}
 
 word_t isa_reg_str2val(const char *s, bool *success) {
   uint64_t size = sizeof(regs)/sizeof(regs[0]);
