@@ -56,6 +56,7 @@ make ARCH=riscv64-nemu ALL=hello-str run
 # 想要验证自己实现的这些函数时，就把这个宏打开
 # define __NATIVE_USE_KLIB__
 # 可以用putch输出字符串
+# 在nemu menuconfig中打开DEVICE后可以用printf函数
 
 make ARCH=native ALL=string run
 

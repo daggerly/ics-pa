@@ -64,7 +64,8 @@ int main() {
   for (int i = 0; i < sizeof(data)/sizeof(int); i++) {
     reset();
     sprintf(dst + d_offsets[i], d_fmts[i], data[i]);
-    // printf("%s %s\n", dst, d_ans[i]);
+    //需要打开DEVICE
+    printf("%s %s\n", dst, d_ans[i]);
     assert(strcmp(dst, d_ans[i]) == 0);
   }
 

@@ -107,11 +107,6 @@ int printf(const char *fmt, ...) {
 }
 
 int vsprintf(char *out, const char *fmt, va_list ap) {
-  panic("Not implemented");
-}
-
-int sprintf(char *out, const char *fmt, ...) {
-    va_list ap;
     size_t i = 0, 
     /* 是否在格式化字符串中*/
     in_fmt=0, 
@@ -120,7 +115,8 @@ int sprintf(char *out, const char *fmt, ...) {
     /* 要拷贝的字符串起始位置*/
     copy_start=0, 
     /* 总共拷贝了几个字符*/
-    copyed = 0, fmt_len = strlen(fmt);
+    copyed = 0, 
+    fmt_len = strlen(fmt);
 
     const char * arg_s = NULL;
     /* 存储数字%d的数值*/
@@ -130,7 +126,6 @@ int sprintf(char *out, const char *fmt, ...) {
     /*数字某一位的数字*/
     arg_d_digit=0;
 
-    va_start(ap, fmt);
     while (i < fmt_len){
       if (in_fmt){  /* 在格式化字符串中*/
         if (fmt[i] == 'd'){
@@ -194,7 +189,7 @@ int sprintf(char *out, const char *fmt, ...) {
       }
       i ++;
     }
-    va_end(ap);
+    
     if (n_to_copy > 0){
       strncpy(out+copyed, fmt+copy_start, n_to_copy);
       copyed += n_to_copy;
@@ -202,6 +197,14 @@ int sprintf(char *out, const char *fmt, ...) {
     }
     // strncpy(out+copyed, "\0", 1);
     memset(out+copyed, 0, 1);
+    return copyed;
+}
+
+int sprintf(char *out, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int copyed = vsprintf(out, fmt, ap);
+    va_end(ap);
     return copyed;
 }
 
