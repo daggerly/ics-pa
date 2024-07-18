@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 //想要验证自己实现的这些函数时，就把这个宏打开
-#define __NATIVE_USE_KLIB__
+// #define __NATIVE_USE_KLIB__
 
 // string.h
 void  *memset    (void *s, int c, size_t n);

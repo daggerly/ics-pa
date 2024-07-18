@@ -5,45 +5,86 @@ static uint64_t call_depth = 0;
 
 #define CALL_STACK_BUF_LENGTH 6
 static uint8_t call_stack_buf_index = 0;
+// 为了比较用的buf
 static char call_stack_buf[CALL_STACK_BUF_LENGTH][128];
+// 为了打印用的buf
+static char call_stack_log_buf[CALL_STACK_BUF_LENGTH][128];
+#define INIT_CALL_FROM  ""
 
+static void print_call_trace(){
+    // printf("%s\n", call_stack_log_buf[call_stack_buf_index]);
+    // Log("%s\n", call_stack_log_buf[call_stack_buf_index]);
+}
+
+static void print_ret_trace(char* ret_from, char* ret_to, Decode *s){
+   
+    // printf("0x%lx %lu ret from %s to %s\n", s->pc, call_depth, ret_from, ret_to);
+    // Log("0x%lx %lu ret from %s to %s\n", s->pc, call_depth, ret_from, ret_to);
+}
 
 /*打印函数调用*/
-void print_call_trace(int dst, uint64_t dnpc, uint64_t pc){
-    if(dst){
-        for(uint64_t tmp_ident=0;tmp_ident< call_depth; tmp_ident++){
-          printf("   ");
-        }
-        printf("call %s @0x%lx\n", find_func_name(dnpc), pc);
-        call_depth ++;
-    }
-}
- 
-/*打印函数返回*/
-void print_ret_trace(uint64_t pc){
-    for(uint64_t tmp_ident=0;tmp_ident< call_depth-1; tmp_ident++){
-          printf("   ");
-    }
-    printf("ret %s@0x%lx\n", find_func_name(pc), pc);
-    call_depth --;
+static void print_jal_trace(){
+    print_call_trace();
 }
 
 /* 增加一级调用链 */
-void log_call_stack(int dst, uint64_t dnpc, uint64_t pc){
-    if(dst){
-        sprintf(call_stack_buf[call_stack_buf_index], "call %s @0x%lx", find_func_name(dnpc), pc);
-        call_stack_buf_index ++;
-        call_stack_buf_index %= CALL_STACK_BUF_LENGTH;
+void log_jal_stack(int rd, Decode *s){
+    char* call_from = find_func_name(s->pc);
+    char* call_to = find_func_name(s->dnpc);
+    if (call_from && call_to && strcmp(call_from, call_to) == 0){
+        // 函数内跳转，不算函数调用
+        return;
     }
+    if(call_from == NULL){
+        call_from = INIT_CALL_FROM;
+    }
+    strcpy(call_stack_buf[call_stack_buf_index], call_from);
+    sprintf(call_stack_log_buf[call_stack_buf_index], "0x%lx %lu call from %s to %s", s->pc, call_depth, call_from, call_to);
+    IFDEF(CONFIG_FTRACE, print_jal_trace());
+    call_depth += 1;
+    call_stack_buf_index += 1;
+    call_stack_buf_index %= CALL_STACK_BUF_LENGTH;
+
 }
 
 /* 从函数返回，减少一级调用链 */
-void log_ret(){
-    if (call_stack_buf_index == 0){
-        call_stack_buf_index = CALL_STACK_BUF_LENGTH - 1;
+void log_jalr_stack(int rd, Decode *s){
+    char* from = find_func_name(s->pc);
+    char* to = find_func_name(s->dnpc);
+    uint32_t i = s->isa.inst.val;
+    int rs1 = BITS(i, 19, 15);
+    if (rd){
+        log_jal_stack(rd, s);
+    }else if (rs1 == 1){
+        if (strcmp(from, to) == 0){
+            // 函数内调用，不算返回
+            return;
+        }
+        IFDEF(CONFIG_FTRACE, print_ret_trace(from, to, s));
+
+        call_depth -= 1;
+        if (call_stack_buf_index == 0){
+            call_stack_buf_index = CALL_STACK_BUF_LENGTH - 1;
+        }else{
+            call_stack_buf_index -= 1;
+        }
+        
+        for(int tmp_index = CALL_STACK_BUF_LENGTH; tmp_index > 0 && strcmp(call_stack_buf[call_stack_buf_index], to) != 0; tmp_index-= 1){
+            // printf("last call from %s != %s, continue\n", call_stack_buf[call_stack_buf_index], to);
+            call_depth -= 1;
+            if (call_stack_buf_index == 0){
+                call_stack_buf_index = CALL_STACK_BUF_LENGTH - 1;
+            }else{
+                call_stack_buf_index -= 1;
+            }
+        }
+        
     }else{
-        call_stack_buf_index --;
+        
+        log_jal_stack(rd, s);
+       
     }
+    
 }
 
 /*打印调用链*/
@@ -54,7 +95,7 @@ void print_call_stack(){
         for(j=0; j<i;j++){
             printf("  ");
         }
-        printf("%s\n", call_stack_buf[tmp_call_stack_index]);
+        printf("%s\n", call_stack_log_buf[tmp_call_stack_index]);
         tmp_call_stack_index ++;
         tmp_call_stack_index %= CALL_STACK_BUF_LENGTH;
   }

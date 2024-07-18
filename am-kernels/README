@@ -62,3 +62,21 @@ make ARCH=native ALL=string run
 
 cd tests/klib-tests
 make ARCH=native ALL=memset run
+
+
+# DEVICE的实现原理
+add_mmio_map函数中传入了一个handler， 
+当用户代码调用io_read时，实际调用ioe_read，执行了abstrac-machine/am/src/platform/nemu/ioe/ioe.c中对应的handler
+# 测试硬件
+cd tests/am-tests
+make ARCH=riscv64-nemu run mainargs=t 或其他main.c
+
+
+JAL 仅当rd为x1/x5，才将返回地址推送
+JALR：
+rd is x1/x5  rs1 is x1/x5   rd=rs1   RAS action
+No                 No          —       None
+No                 Yes         —        Pop
+Yes                 No         —      Push
+Yes                Yes        No       Pop, then push
+Yes                Yes         Yes      Push

@@ -232,15 +232,14 @@ static int decode_exec(Decode *s) {
   INSTPAT("? ??????????    ?    ????????   ????? 11011 11", jal, J, 
     R(rd) = s->snpc;
     s->dnpc = s->pc + imm;
-    IFDEF(CONFIG_FTRACE, print_call_trace(rd, s->dnpc, s->pc));
-    log_call_stack(rd, s->dnpc, s->pc);
+    log_jal_stack(rd, s);
   );
   //             imm   | rs1 |funct3| rd  |  opcode
   INSTPAT("???????????? ????? 000    ????? 11001 11", jalr, I, 
     R(rd) = s->snpc;
     s->dnpc = (src1 + imm) & ~1;
-    IFDEF(CONFIG_FTRACE, print_ret_trace(s->pc));
-    log_ret();
+    
+    log_jalr_stack(rd, s);
   );
   // imm[12]|imm[10:5]| rs2 | rs1 |   |imm[4:1]|imm[11]| opcode
   // if (rs1 <s rs2) pc += sext(offset)
@@ -379,6 +378,16 @@ static int decode_exec(Decode *s) {
   INSTPAT("0000001 ????? ????? 000 ????? 0110011", mul, RR, 
     R(rd) = src1 * src2;
     // Log("mul: src1: 0x%lx * src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+  // 有符号低32位相除，结果的低32位有符号扩展至64位
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000001 ????? ????? 101 ????? 0110011", divu, RR, 
+    uint32_src1 = src1;
+    uint32_src2 = src2;
+    uint32_src1 = uint32_src1 / uint32_src2;
+    R(rd) = SEXT(uint32_src1, 32);
+    // Log("divu: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+
   );
   // 有符号低32位相乘，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode

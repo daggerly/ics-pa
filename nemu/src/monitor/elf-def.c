@@ -8,6 +8,7 @@ static uint64_t func_sym_num = 0;
 typedef struct
 {
   char* name;		/* Symbol name */
+  char* full_name;		/* Symbol name@addr */
   uint64_t	addr;		/* Func Start */
   uint64_t	end;		/* Func End */
 } SymInfo;
@@ -45,7 +46,7 @@ char * find_func_name(uint64_t inst_vaddr){
     for(uint64_t i=0; i<func_sym_num; i++ ){
         if((SymInfoArray[i].addr <= inst_vaddr) && (inst_vaddr < SymInfoArray[i].end)){
             // printf("find_func_name %s\n", SymInfoArray[i].name);
-            return SymInfoArray[i].name;
+            return SymInfoArray[i].full_name;
         }
     }
     return NULL;
@@ -169,15 +170,19 @@ void parse_img_elf(char *image_elf_file){
     for(i=0; i<symbol_num; i++){
         Elf64_Sym *sym = sym_table_base + i*symbol_entry_size;
         if ((sym->st_name == 0) || ELF64_ST_TYPE(sym->st_info) != STT_FUNC) continue;
-
-        // printf("%s %u\n", (char *)(string_table_base + sym->st_name), ELF64_ST_TYPE(sym->st_info));
-        
+        int name_length = 0;
         // set name
-        int name_length = strlen(string_table_base + sym->st_name);
+        name_length = strlen(string_table_base + sym->st_name);
         char* sym_name = (char*)malloc((name_length+1)*sizeof(char));
         Assert(sym_name, "分配内存失败");
         strcpy(sym_name, (char*)(string_table_base + sym->st_name));
+
+        // full name
+        char* full_name = (char*)malloc((name_length+ 3 + 8 + 1)*sizeof(char));
+        Assert(full_name, "分配内存失败");
+        sprintf(full_name, "%s@0x%lx", sym_name, sym->st_value);
         SymInfoArray[tmp_func_sym_num].name = sym_name;
+        SymInfoArray[tmp_func_sym_num].full_name = full_name;
         SymInfoArray[tmp_func_sym_num].addr = sym->st_value;
         SymInfoArray[tmp_func_sym_num].end = sym->st_value + sym->st_size;
 
@@ -190,6 +195,7 @@ void finish_elf(){
     if (SymInfoArray){
         for(uint64_t i=0;i<func_sym_num;i++){
             free(SymInfoArray[i].name);
+            free(SymInfoArray[i].full_name);
         }
         free(SymInfoArray);
     }
