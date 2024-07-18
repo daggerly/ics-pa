@@ -5,6 +5,9 @@
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
+#define  DEFAULT_PADDING ' '
+#define  ZERO_PADDING '0'
+
 typedef struct 
 {
   void * addr;
@@ -12,9 +15,11 @@ typedef struct
 } OutputClosure;
 
 static int _printf(va_list ap, const char *fmt, OutputClosure *output){
-    size_t i = 0, 
     /* 是否在格式化字符串中*/
-    in_fmt=0, 
+    uint8_t in_fmt = 0,
+    /* 是不是padding字符 */
+    is_padding = 1;
+    size_t i = 0, 
     /* 要拷贝几个字符*/
     n_to_copy=0, 
     /* 要拷贝的字符串起始位置*/
@@ -22,40 +27,65 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
     /* 总共拷贝了几个字符*/
     copyed = 0, 
     fmt_len = strlen(fmt);
-
+    char padding = DEFAULT_PADDING;
     const char * arg_s = NULL;
     /* 存储数字%d的数值*/
     int arg_d = 0,
     /*数字位数*/
     arg_d_n=1, 
     /*数字某一位的数字*/
-    arg_d_digit=0;
+    arg_d_digit=0,
+    /* 宽度 */
+    width = 0;
 
     while (i < fmt_len){
       if (in_fmt){  /* 在格式化字符串中*/
         if (fmt[i] == 'd'){
           arg_d = va_arg(ap, int);
           arg_d_n=1;
+          int diff_width = width;
           if (arg_d < 0){
-            output->handler(output->addr, copyed, '-');
-            copyed += 1;
-            // arg_d = -arg_d;
             arg_d_n = -1;
+            // 负数的负号本身占一位
+            diff_width -= 1;
           }
           arg_d_digit = arg_d;
           if (arg_d > 0){
             while (arg_d_digit > 0){
               arg_d_n *= 10;
               arg_d_digit /= 10;
+              diff_width -= 1;
             }
+          }else if (arg_d == 0){
+            diff_width -= 1;
           }else{
             while (arg_d_digit < 0){
               arg_d_n *= 10;
               arg_d_digit /= 10;
+              diff_width -= 1;
             }
           }
-          
           arg_d_n /= 10;
+        
+          /* 负数且空格填充时，空格在负号前 */
+          if (arg_d < 0 && diff_width > 0 && padding == DEFAULT_PADDING){
+            while (diff_width > 0)
+            {
+              output->handler(output->addr, copyed, padding);
+              diff_width -= 1;
+              copyed += 1;
+            }
+          }
+          if (arg_d < 0){
+            output->handler(output->addr, copyed, '-');
+            copyed += 1;
+          }
+          while (diff_width > 0){
+            output->handler(output->addr, copyed, padding);
+            diff_width -= 1;
+            copyed += 1;
+          }
+  
           if (arg_d != 0){
             while (arg_d_n != 0){
               arg_d_digit = arg_d / arg_d_n;
@@ -76,12 +106,36 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
             copyed += 1;
           }
           arg_s = NULL;
+        }else if (fmt[i] == '0'){
+          if (is_padding){
+            padding = ZERO_PADDING;
+            // 遇到padding了，再遇到0就是宽度数字了
+            is_padding = 0;
+          }else{
+            // 不是padding，那就是宽度数字
+            width *= 10;
+            width += fmt[i] - 48;
+          }
+          i += 1;
+          continue;
+        }else if (fmt[i] > '0' && fmt[i] < '9'){
+          /* 宽度数字 */
+          is_padding = 0;
+
+          width *= 10;
+          width += fmt[i] - 48;
+
+          i += 1;
+          continue;
         }else{
           panic("Not implemented");
         }
         /* 处理完格式化字符了*/
         in_fmt = 0;
         copy_start = i + 1; /* 要拷贝的字符串起始位置指向下一个字符*/
+        padding = DEFAULT_PADDING;
+        width = 0;
+        is_padding = 1;
       }else if (fmt[i] == '%'){ /* 遇到格式化字符了*/
         in_fmt = 1;
         /* 把之前没拷贝的字符拷贝过去*/

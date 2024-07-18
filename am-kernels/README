@@ -66,7 +66,8 @@ make ARCH=native ALL=memset run
 
 # DEVICE的实现原理
 add_mmio_map函数中传入了一个handler， 
-当用户代码调用io_read时，实际调用ioe_read，执行了abstrac-machine/am/src/platform/nemu/ioe/ioe.c中对应的handler
+当用户代码取地址时，被转换成取地址指令，调用paddr_read, 进而mmio_read,调用io_read时，
+实际调用ioe_read，执行了abstrac-machine/am/src/platform/nemu/ioe/ioe.c中对应的handler
 # 测试硬件
 cd tests/am-tests
 make ARCH=riscv64-nemu run mainargs=t 或其他main.c
