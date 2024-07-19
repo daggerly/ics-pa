@@ -11,14 +11,15 @@ static char call_stack_buf[CALL_STACK_BUF_LENGTH][128];
 static char call_stack_log_buf[CALL_STACK_BUF_LENGTH][128];
 #define INIT_CALL_FROM  ""
 
+
+#ifdef CONFIG_FTRACE
 static void print_call_trace(){
-    // printf("%s\n", call_stack_log_buf[call_stack_buf_index]);
+    printf("%s\n", call_stack_log_buf[call_stack_buf_index]);
     // Log("%s\n", call_stack_log_buf[call_stack_buf_index]);
 }
 
 static void print_ret_trace(char* ret_from, char* ret_to, Decode *s){
-   
-    // printf("0x%lx %lu ret from %s to %s\n", s->pc, call_depth, ret_from, ret_to);
+    printf("0x%lx %lu ret from %s to %s\n", s->pc, call_depth, ret_from, ret_to);
     // Log("0x%lx %lu ret from %s to %s\n", s->pc, call_depth, ret_from, ret_to);
 }
 
@@ -26,6 +27,7 @@ static void print_ret_trace(char* ret_from, char* ret_to, Decode *s){
 static void print_jal_trace(){
     print_call_trace();
 }
+#endif
 
 /* 增加一级调用链 */
 void log_jal_stack(int rd, Decode *s){

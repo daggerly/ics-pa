@@ -43,7 +43,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 
-  strcpy(iringbuf[iringbuf_index], _this->logbuf);
+  IFDEF(CONFIG_ITRACE, strcpy(iringbuf[iringbuf_index], _this->logbuf););
   iringbuf_index ++;
   iringbuf_index = iringbuf_index %  IRINGBUF_LENGTH;
 

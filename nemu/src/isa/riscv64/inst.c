@@ -363,6 +363,17 @@ static int decode_exec(Decode *s) {
     // }
   );
 
+  // 符号扩展后比较
+  //        imm[11:0]  | rs1 |   | rd  | opcode
+  INSTPAT("???????????? ????? 010 ????? 0010011", slti, I, 
+    R(rd) = (src1 < imm) ?  1 : 0;
+    // if (src1 < imm) {
+    //   Log("slti: src1: %lu < imm:%lu, %s set to 1 ", src1, imm, reg_name(rd, sizeof(word_t)));
+    // } else{
+    //   Log("slti: src1: %lu >= imm:%lu, %s set to 0 ", src1, imm, reg_name(rd, sizeof(word_t)));
+    // }
+  );
+
   // 无符号比较
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000000 ????? ????? 011 ????? 01100 11", sltu, RR, 
