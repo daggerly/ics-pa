@@ -393,10 +393,7 @@ static int decode_exec(Decode *s) {
   // 有符号低32位相除，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000001 ????? ????? 101 ????? 0110011", divu, RR, 
-    uint32_src1 = src1;
-    uint32_src2 = src2;
-    uint32_src1 = uint32_src1 / uint32_src2;
-    R(rd) = SEXT(uint32_src1, 32);
+    R(rd) = src1 / src2;
     // Log("divu: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
 
   );

@@ -31,9 +31,11 @@ uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
+#ifdef CONFIG_ITRACE
 #define IRINGBUF_LENGTH 16
 static uint8_t iringbuf_index = 0;
 static char iringbuf[IRINGBUF_LENGTH][128];
+#endif
 
 void device_update();
 
@@ -43,9 +45,11 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
 
-  IFDEF(CONFIG_ITRACE, strcpy(iringbuf[iringbuf_index], _this->logbuf););
+#ifdef CONFIG_ITRACE
+  strcpy(iringbuf[iringbuf_index], _this->logbuf);
   iringbuf_index ++;
   iringbuf_index = iringbuf_index %  IRINGBUF_LENGTH;
+#endif
 
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 #ifdef CONFIG_WATCHPOINT
@@ -112,7 +116,8 @@ static void statistic() {
   else Log("Finish running in less than 1 us and can not calculate the simulation frequency");
 }
 
-void itrace_display(){
+#ifdef CONFIG_ITRACE
+static void itrace_display(){
   printf("instracion trace:\n");
   /* iringbu中最早的一条记录*/
   uint8_t tmp_iringbuf_index = (iringbuf_index + 1) % IRINGBUF_LENGTH, i = 0;
@@ -123,10 +128,13 @@ void itrace_display(){
   }
   printf("\n");
 }
+#endif
 
 void assert_fail_msg() {
   isa_reg_display();
+#ifdef CONFIG_ITRACE
   itrace_display();
+#endif
   print_call_stack();
   statistic();
 }
