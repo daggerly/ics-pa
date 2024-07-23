@@ -37,6 +37,8 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
     arg_d_digit=0,
     /* 宽度 */
     width = 0;
+    uint32_t arg_u = 0,
+    arg_u_digit=0;
 
     while (i < fmt_len){
       if (in_fmt){  /* 在格式化字符串中*/
@@ -118,7 +120,7 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
           }
           i += 1;
           continue;
-        }else if (fmt[i] > '0' && fmt[i] < '9'){
+        }else if (fmt[i] > '0' && fmt[i] <= '9'){
           /* 宽度数字 */
           is_padding = 0;
 
@@ -127,6 +129,42 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
 
           i += 1;
           continue;
+        }else if (fmt[i] == 'u'){
+          arg_u = va_arg(ap, uint32_t);
+          arg_d_n=1;
+          int diff_width = width;
+          
+          arg_u_digit = arg_u;
+          if (arg_u > 0){
+            while (arg_u_digit > 0){
+              arg_d_n *= 10;
+              arg_u_digit /= 10;
+              diff_width -= 1;
+            }
+          }else if (arg_u == 0){
+            diff_width -= 1;
+          }
+          arg_d_n /= 10;
+        
+          while (diff_width > 0){
+            output->handler(output->addr, copyed, padding);
+            diff_width -= 1;
+            copyed += 1;
+          }
+  
+          if (arg_u != 0){
+            while (arg_d_n != 0){
+              arg_u_digit = arg_u / arg_d_n;
+              output->handler(output->addr, copyed, arg_u_digit + 48);
+              copyed += 1;
+              arg_u = arg_u % arg_d_n;
+              arg_d_n /= 10;
+            }
+          }else{
+            // 0
+            output->handler(output->addr, copyed, arg_u + 48);
+            copyed += 1;
+          }
         }else{
           panic("Not implemented");
         }

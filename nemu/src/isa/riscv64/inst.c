@@ -109,6 +109,15 @@ static int decode_exec(Decode *s) {
   );
   // 从内存加载一个8位的值 0扩展到64位
   //          imm      | rs1 |   | rd  | opcode
+  INSTPAT("???????????? ????? 000 ????? 0000011", lb      , I, 
+    // isa_reg_display();
+    // print_u64_binary("mr", src1 + imm);
+    // Log("%lx", vaddr_read(src1 + imm, 1));
+    R(rd) = SEXT(Mr(src1 + imm, 1), 8);
+    // isa_reg_display();
+  );
+  // 从内存加载一个8位的值 0扩展到64位
+  //          imm      | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 100 ????? 0000011", lbu      , I, 
     // isa_reg_display();
     // print_u64_binary("mr", src1 + imm);
@@ -403,6 +412,15 @@ static int decode_exec(Decode *s) {
     // Log("divu: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
 
   );
+  // 无符号低32位相除，结果的低32位有符号扩展至64位
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000001 ????? ????? 101 ????? 0111011", divuw, RR, 
+    uint32_src1 = (uint32_t)src1;
+    uint32_src2 = (uint32_t)src2;
+    uint32_src1 = uint32_src1 / uint32_src2;
+    R(rd) = SEXT(uint32_src1, 32);
+    // Log("divuw: src1: 0x%x / src2:0x%x = 0x%lx, saving into %s", (uint32_t)src1, uint32_src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
   // 有符号低32位相乘，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000001 ????? ????? 000 ????? 01110 11", mulw, RR, 
@@ -421,9 +439,17 @@ static int decode_exec(Decode *s) {
     int32_src1 = int32_src1 / int32_src2;
     R(rd) = SEXT(int32_src1, 32);
     // Log("divw: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
-
   );
-  // 低32位相除的余数，结果的低32位有符号扩展至64位
+  // 无符号低32位相除的余数，结果的低32位有符号扩展至64位
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000001 ????? ????? 111 ????? 01110 11", remuw, RR, 
+    uint32_src1 = src1;
+    uint32_src2 = src2;
+    uint32_src1 = uint32_src1 % uint32_src2;
+    R(rd) = SEXT(uint32_src1, 32);
+    Log("remuw: src1: 0x%lx %% src2:0x%x = 0x%lx, saving into %s", src1, uint32_src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+  // 有符号低32位相除的余数，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000001 ????? ????? 110 ????? 01110 11", remw, RR, 
     int32_src1 = src1;
@@ -431,6 +457,19 @@ static int decode_exec(Decode *s) {
     int32_src1 = int32_src1 % int32_src2;
     R(rd) = SEXT(int32_src1, 32);
     // Log("remw: src1: 0x%lx %% src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+  // 64位无符号或
+  //       |    imm    | rs1 |   |rd   | opcode
+  INSTPAT("???????????? ????? 110 ????? 0010011", ori, I, 
+    R(rd) = src1 | imm;
+    // Log("or: src1: 0x%lx ^ imm:0x%lx = 0x%lx, saving into %s", src1, imm, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+
+  // 64位无符号异或
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000000 ????? ????? 100 ????? 0110011", xor, RR, 
+    R(rd) = src1 ^ imm;
+    // Log("xor: src1: 0x%lx ^ imm:0x%lx = 0x%lx, saving into %s", src1, imm, R(rd), reg_name(rd, sizeof(word_t)));
   );
 
   //          imm     |  rs1 |   |rd   | opcode

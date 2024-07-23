@@ -46,6 +46,23 @@ char* s_ans[] = {
 };
 
 
+uint32_t udata[] = {
+  0, 4294967295, 1
+};
+
+int u_offsets[] = {
+  1, 0, 0
+};
+
+
+char* u_fmts[] = {
+  "bb%u", "%ubb", "%09u"
+};
+
+char* u_ans[] = {
+  "abb0", "4294967295bb", "000000001",
+};
+
 void reset() {
   int i;
   for (i = 0; i < N; i ++) {
@@ -69,6 +86,14 @@ int main() {
     sprintf(dst + s_offsets[i], s_fmts[i], s_data[i]);
     // printf("%s %s\n", dst, d_ans[i]);
     assert(strcmp(dst, s_ans[i]) == 0);
+  }
+
+  for (int i = 0; i < sizeof(udata)/sizeof(uint32_t); i++) {
+    reset();
+    sprintf(dst + u_offsets[i], u_fmts[i], udata[i]);
+    //需要打开DEVICE
+    // printf("%s %s\n", dst, u_ans[i]);
+    assert(strcmp(dst, u_ans[i]) == 0);
   }
 
   return 0;
