@@ -69,12 +69,16 @@ static int decode_exec(Decode *s) {
   uint32_t uint32_src1 = 0, uint32_src2 = 0;
   int32_t int32_src1 = 0,  int32_src2 = 0;
   s->dnpc = s->snpc;
-  // Log("execing: 0x%lx", s->pc);
-  // word_t addr = 0x800004a8;
-  // for(int p_i=0;p_i<13;p_i++){
-  //   word_t p_c = vaddr_read(addr + p_i, 1);
-  //   Log("execing: %c %lu", (int)p_c, p_c);
+  
+  // if(s->pc == 0x80000094){
+  //   Log("execing: 0x%lx, Bool_Glob=0x%lx, R(s0)=0x%lx", s->pc, Mr(0x80000e10,8), R(8));
+  // }else if(s->pc == 0x80000090){
+  //   Log("execing: 0x%lx, Bool_Glob=0x%lx, R(a5)=0x%lx", s->pc, Mr(0x80000e10,8), R(15));
+  // }else if(s->pc >= 0x8000006c &&
+  //          s->pc <= 0x80000090 ){
+  //   Log("execing: 0x%lx, R(a5)=0x%lx, R(a0)=0x%lx", s->pc, R(15), R(10));
   // }
+ 
 #define INSTPAT_INST(s) ((s)->isa.inst.val)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
   decode_operand(s, &rd, &src1, &src2, &imm, concat(TYPE_, type)); \
@@ -366,11 +370,13 @@ static int decode_exec(Decode *s) {
   // 符号扩展后比较
   //        imm[11:0]  | rs1 |   | rd  | opcode
   INSTPAT("???????????? ????? 010 ????? 0010011", slti, I, 
-    R(rd) = (src1 < imm) ?  1 : 0;
-    // if (src1 < imm) {
-    //   Log("slti: src1: %lu < imm:%lu, %s set to 1 ", src1, imm, reg_name(rd, sizeof(word_t)));
+    int64_src1 = src1;
+    int64_src2 = imm;
+    R(rd) = (int64_src1 < int64_src2) ?  1 : 0;
+    // if (int64_src1 < int64_src2) {
+    //   Log("slti: src1: %ld < imm:%ld, %s set to 1 ", int64_src1, int64_src2, reg_name(rd, sizeof(word_t)));
     // } else{
-    //   Log("slti: src1: %lu >= imm:%lu, %s set to 0 ", src1, imm, reg_name(rd, sizeof(word_t)));
+    //   Log("slti: src1: %ld >= imm:%ld, %s set to 0 ", int64_src1, int64_src2, reg_name(rd, sizeof(word_t)));
     // }
   );
 
