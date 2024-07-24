@@ -97,6 +97,10 @@ static int decode_exec(Decode *s) {
     R(rd) = SEXT(Mr(src1 + imm, 4), 32);
     // Log("lw read %lx from %lx", R(rd), src1 + imm);
   );
+  INSTPAT("??????? ????? ????? 110    ????? 00000 11", lwu     , I,
+    R(rd) = Mr(src1 + imm, 4);
+    // Log("lw read %lx from %lx", R(rd), src1 + imm);
+  );
   // 从内存加载一个16位的值 符号扩展到64位
   INSTPAT("???????????? ????? 001 ????? 0000011", lh      , I, 
     R(rd) = SEXT(Mr(src1 + imm, 2), 16);
