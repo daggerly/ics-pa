@@ -7,7 +7,7 @@ char dst[N];
 int data[] = {
   0, 126322567, 2147483647, -2147483648, -2147483647,
   252645135, 126322567, -1, 0, 0, 
-  1, 1, -1, -1};
+  1, 10, -1, -10};
 int d_offsets[] = {
   1, 0, 1, 1, 0, 
   0, 0, 13, 0, 0,
@@ -23,7 +23,7 @@ char* d_fmts[] = {
 char* d_ans[] = {
   "abb0", "126322567bb", "a2147483647", "a--2147483648", "-2147483647",
   "252645135", "126322567", "aaaaaaaaaaaaa-1", " 0", "00",
-  "  1", "001"," -1", "-01",
+  "  1", "010"," -1", "-10",
 };
 
 char* s_data[] = {"", "%s", "b",  "b", };
@@ -47,20 +47,38 @@ char* s_ans[] = {
 
 
 uint32_t udata[] = {
-  0, 4294967295, 1
+  0, 0xffffffff, 1, 0xffffffff
 };
 
 int u_offsets[] = {
-  1, 0, 0
+  1, 0, 0, 0
 };
 
 
 char* u_fmts[] = {
-  "bb%u", "%ubb", "%09u"
+  "bb%u", "%ubb", "%09u", "%02u"
 };
 
 char* u_ans[] = {
-  "abb0", "4294967295bb", "000000001",
+  "abb0", "4294967295bb", "000000001", "4294967295"
+};
+
+
+uint32_t xdata[] = {
+  0, 0x8000, 1, 0xffffffff
+};
+
+int x_offsets[] = {
+  1, 0, 0, 0
+};
+
+
+char* x_fmts[] = {
+  "bb%02x", "%xbb", "%9x", "%2x"
+};
+
+char* x_ans[] = {
+  "abb00", "8000bb", "        1", "ffffffff"
 };
 
 void reset() {
@@ -88,6 +106,7 @@ int main() {
     assert(strcmp(dst, s_ans[i]) == 0);
   }
 
+  // test %u
   for (int i = 0; i < sizeof(udata)/sizeof(uint32_t); i++) {
     reset();
     sprintf(dst + u_offsets[i], u_fmts[i], udata[i]);
@@ -95,6 +114,16 @@ int main() {
     // printf("%s %s\n", dst, u_ans[i]);
     assert(strcmp(dst, u_ans[i]) == 0);
   }
+
+  // test %x
+  for (int i = 0; i < sizeof(xdata)/sizeof(uint32_t); i++) {
+    reset();
+    sprintf(dst + x_offsets[i], x_fmts[i], xdata[i]);
+    //需要打开DEVICE
+    // printf("%s %s\n", dst, x_ans[i]);
+    assert(strcmp(dst, x_ans[i]) == 0);
+  }
+
 
   return 0;
 }

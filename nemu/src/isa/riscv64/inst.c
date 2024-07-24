@@ -447,7 +447,7 @@ static int decode_exec(Decode *s) {
     uint32_src2 = src2;
     uint32_src1 = uint32_src1 % uint32_src2;
     R(rd) = SEXT(uint32_src1, 32);
-    Log("remuw: src1: 0x%lx %% src2:0x%x = 0x%lx, saving into %s", src1, uint32_src2, R(rd), reg_name(rd, sizeof(word_t)));
+    // Log("remuw: src1: 0x%lx %% src2:0x%x = 0x%lx, saving into %s", src1, uint32_src2, R(rd), reg_name(rd, sizeof(word_t)));
   );
   // 有符号低32位相除的余数，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
@@ -468,8 +468,8 @@ static int decode_exec(Decode *s) {
   // 64位无符号异或
   //              | rs2 | rs1 |   |rd   | opcode
   INSTPAT("0000000 ????? ????? 100 ????? 0110011", xor, RR, 
-    R(rd) = src1 ^ imm;
-    // Log("xor: src1: 0x%lx ^ imm:0x%lx = 0x%lx, saving into %s", src1, imm, R(rd), reg_name(rd, sizeof(word_t)));
+    R(rd) = src1 ^ src2;
+    // Log("xor: src1: 0x%lx ^ src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
   );
 
   //          imm     |  rs1 |   |rd   | opcode

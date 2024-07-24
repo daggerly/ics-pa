@@ -31,30 +31,31 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
     const char * arg_s = NULL;
     /* 存储数字%d的数值*/
     int arg_d = 0,
-    /*数字位数*/
-    arg_d_n=1, 
+    /*模的基数*/
+    mod = 1, 
     /*数字某一位的数字*/
-    arg_d_digit=0,
+    arg_d_digit = 0,
     /* 宽度 */
     width = 0;
     uint32_t arg_u = 0,
-    arg_u_digit=0;
+    arg_u_digit = 0,
+    mod_u = 1;
 
     while (i < fmt_len){
       if (in_fmt){  /* 在格式化字符串中*/
         if (fmt[i] == 'd'){
           arg_d = va_arg(ap, int);
-          arg_d_n=1;
+          mod=1;
           int diff_width = width;
           if (arg_d < 0){
-            arg_d_n = -1;
+            mod = -1;
             // 负数的负号本身占一位
             diff_width -= 1;
           }
           arg_d_digit = arg_d;
           if (arg_d > 0){
             while (arg_d_digit > 0){
-              arg_d_n *= 10;
+              mod *= 10;
               arg_d_digit /= 10;
               diff_width -= 1;
             }
@@ -62,12 +63,12 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
             diff_width -= 1;
           }else{
             while (arg_d_digit < 0){
-              arg_d_n *= 10;
+              mod *= 10;
               arg_d_digit /= 10;
               diff_width -= 1;
             }
           }
-          arg_d_n /= 10;
+          mod /= 10;
         
           /* 负数且空格填充时，空格在负号前 */
           if (arg_d < 0 && diff_width > 0 && padding == DEFAULT_PADDING){
@@ -89,12 +90,12 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
           }
   
           if (arg_d != 0){
-            while (arg_d_n != 0){
-              arg_d_digit = arg_d / arg_d_n;
+            while (mod != 0){
+              arg_d_digit = arg_d / mod;
               output->handler(output->addr, copyed, arg_d_digit + 48);
               copyed += 1;
-              arg_d = arg_d % arg_d_n;
-              arg_d_n /= 10;
+              arg_d = arg_d % mod;
+              mod /= 10;
             }
           }else{
             // 0
@@ -131,21 +132,21 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
           continue;
         }else if (fmt[i] == 'u'){
           arg_u = va_arg(ap, uint32_t);
-          arg_d_n=1;
+          mod_u=1;
           int diff_width = width;
           
           arg_u_digit = arg_u;
           if (arg_u > 0){
+            arg_u_digit /= 10;
+            diff_width -= 1;
             while (arg_u_digit > 0){
-              arg_d_n *= 10;
+              mod_u *= 10;
               arg_u_digit /= 10;
               diff_width -= 1;
             }
           }else if (arg_u == 0){
             diff_width -= 1;
           }
-          arg_d_n /= 10;
-        
           while (diff_width > 0){
             output->handler(output->addr, copyed, padding);
             diff_width -= 1;
@@ -153,16 +154,61 @@ static int _printf(va_list ap, const char *fmt, OutputClosure *output){
           }
   
           if (arg_u != 0){
-            while (arg_d_n != 0){
-              arg_u_digit = arg_u / arg_d_n;
+            while (mod_u != 0){
+              arg_u_digit = arg_u / mod_u;
               output->handler(output->addr, copyed, arg_u_digit + 48);
               copyed += 1;
-              arg_u = arg_u % arg_d_n;
-              arg_d_n /= 10;
+              arg_u = arg_u % mod_u;
+              mod_u /= 10;
             }
           }else{
             // 0
-            output->handler(output->addr, copyed, arg_u + 48);
+            output->handler(output->addr, copyed, '0');
+            copyed += 1;
+          }
+        }else if (fmt[i] == 'x'){
+          arg_u = va_arg(ap, uint32_t);
+          mod_u=1;
+          int diff_width = width, weishu = 1;
+          
+          arg_u_digit = arg_u;
+          if (arg_u > 0){
+            while (arg_u_digit > 0){
+              weishu += 1;
+              arg_u_digit = arg_u_digit >> 4;
+              diff_width -= 1;
+            }
+            weishu -= 1;
+          }else{
+            diff_width -= 1;
+          }
+         
+          for(;weishu > 1; weishu -= 1){
+            mod_u = mod_u << 4;
+          }
+
+          for(; diff_width > 0; diff_width -= 1){
+            output->handler(output->addr, copyed, padding);
+            copyed += 1;
+          }
+  
+          if (arg_u > 0){
+            while (mod_u > 0){
+              arg_u_digit = arg_u / mod_u;
+              if(arg_u_digit < 10){
+                // 0-9
+                output->handler(output->addr, copyed, arg_u_digit + '0');
+              }else{
+                // a-f
+                output->handler(output->addr, copyed, arg_u_digit -10 + 'a');
+              }
+              copyed += 1;
+              arg_u = arg_u % mod_u;
+              mod_u = mod_u >> 4;
+            }
+          }else{
+            // 0
+            output->handler(output->addr, copyed, '0');
             copyed += 1;
           }
         }else{
