@@ -193,6 +193,14 @@ static int decode_exec(Decode *s) {
     // Log("sraw: 0x%x right shift %lu to 0x%lx, save into %s", int32_src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
   );
   // 逻辑左移
+  //              rs2   | rs1 |   | rd  | opcode
+  INSTPAT("0000000 ????? ????? 001 ????? 0110011", sll      , RR,
+    src2 = src2 & 0b11111;
+    R(rd) = src1 << src2;
+    // Log("sll: 0x%lx left shift %lu to 0x%lx, save into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+
+  // 逻辑左移
   // TODO bubble-sort中8000003c:	02059793 slli	a5,a1,0x20的译码为
   //         0000001 00000 01011 001 01111 0010011
   // 而手册上是0000000 ????? ????? 001 ????? 0010011
@@ -439,6 +447,12 @@ static int decode_exec(Decode *s) {
     int32_src1 = int32_src1 / int32_src2;
     R(rd) = SEXT(int32_src1, 32);
     // Log("divw: src1: 0x%lx / src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
+  );
+  // 无符号低32位相除的余数，结果的低32位有符号扩展至64位
+  //              | rs2 | rs1 |   |rd   | opcode
+  INSTPAT("0000001 ????? ????? 111 ????? 0110011", remu, RR, 
+    R(rd) = src1 % src2;;
+    // Log("remu: src1: 0x%lx %% src2:0x%lx = 0x%lx, saving into %s", src1, src2, R(rd), reg_name(rd, sizeof(word_t)));
   );
   // 无符号低32位相除的余数，结果的低32位有符号扩展至64位
   //              | rs2 | rs1 |   |rd   | opcode
