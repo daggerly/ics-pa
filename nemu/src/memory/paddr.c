@@ -65,7 +65,6 @@ word_t paddr_read(paddr_t addr, int len) {
   }
 #ifdef CONFIG_DEVICE
   res = mmio_read(addr, len);
-  IFDEF(CONFIG_MTRACE, Log("reading mmio: 0x%08x %d 0%08lx", addr, len, res)); 
   return res;
 #endif
   out_of_bound(addr);
@@ -79,7 +78,6 @@ void paddr_write(paddr_t addr, int len, word_t data) {
     return; 
   }
 #ifdef CONFIG_DEVICE
-  IFDEF(CONFIG_MTRACE, Log("writting mmio: 0x%08x %d 0%08lx", addr, len, data));
   mmio_write(addr, len, data); 
   return;
 #endif

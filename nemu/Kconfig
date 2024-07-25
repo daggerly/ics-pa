@@ -165,6 +165,10 @@ config MTRACE
   bool "Enable memory tracer"
   default n
 
+config DTRACE
+  bool "Enable device tracer"
+  default n
+
 
 config FTRACE
   bool "Enable Function tracer"
